@@ -1,0 +1,212 @@
+.account-page {
+  min-height: calc(100vh - 56px);
+  padding: 32px 24px 64px;
+}
+
+.account-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.account-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.account-header h1 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #111;
+}
+
+.logout-btn {
+  background: none;
+  border: 1px solid #d0d0d0;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.logout-btn:hover { border-color: #c0392b; color: #c0392b; }
+
+/* ── Tabs ── */
+.account-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #e0e0e0;
+  margin-bottom: 24px;
+  overflow-x: auto;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.tab-btn:hover { color: #333; }
+.tab-btn.active { color: #7A0019; border-bottom-color: #7A0019; font-weight: 600; }
+
+/* ── Stats grid ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.stat-card {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-number {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #7A0019;
+}
+
+.stat-label {
+  font-size: 0.82rem;
+  color: #666;
+  font-weight: 500;
+}
+
+/* ── List items ── */
+.acct-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.acct-empty {
+  color: #999;
+  text-align: center;
+  padding: 40px 16px;
+}
+
+.acct-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 14px 16px;
+}
+
+.acct-item-info {
+  min-width: 0;
+}
+
+.acct-item-title {
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: #222;
+  text-decoration: none;
+}
+
+a.acct-item-title:hover { text-decoration: underline; color: #7A0019; }
+
+.acct-item-meta {
+  font-size: 0.82rem;
+  color: #666;
+  margin-top: 2px;
+}
+
+.acct-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.badge-green  { background: #d4edda; color: #1a6830; }
+.badge-yellow { background: #fff3cd; color: #856404; }
+.badge-gray   { background: #e9ecef; color: #495057; }
+
+/* ── Profile form ── */
+.profile-form {
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.profile-form .form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.profile-form .form-field label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.profile-form .form-field input {
+  padding: 8px 10px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  font-size: 0.92rem;
+  font-family: inherit;
+  color: #222;
+}
+
+.profile-form .form-field input:disabled {
+  background: #f5f5f5;
+  color: #999;
+}
+
+.profile-form .form-field input:focus {
+  outline: 2px solid #7A0019;
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.profile-save-btn {
+  background: #7A0019;
+  color: #fff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  align-self: flex-start;
+  transition: background 0.15s;
+}
+
+.profile-save-btn:hover:not(:disabled) { background: #9a1030; }
+.profile-save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+@media (max-width: 640px) {
+  .account-page { padding: 24px 16px 48px; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+}
