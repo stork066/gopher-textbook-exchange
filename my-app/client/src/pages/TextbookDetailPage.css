@@ -1,0 +1,184 @@
+.tb-detail-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+.back-link {
+  display: inline-block;
+  color: #7A0019;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 24px;
+}
+
+.back-link:hover { text-decoration: underline; }
+
+.tb-detail-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 32px;
+  align-items: flex-start;
+  margin-bottom: 40px;
+}
+
+.tb-detail-img {
+  width: 100%;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.tb-detail-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 8px;
+}
+
+.tb-detail-author {
+  font-size: 1rem;
+  color: #444;
+  margin-bottom: 4px;
+}
+
+.tb-detail-edition {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.tb-detail-isbn {
+  font-size: 0.82rem;
+  color: #999;
+  margin-top: 8px;
+}
+
+/* ── Listings section ── */
+.tb-listings-section {
+  border-top: 1px solid #e0e0e0;
+  padding-top: 24px;
+}
+
+.tb-listings-section h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 16px;
+}
+
+.tb-no-listings {
+  color: #999;
+  font-size: 0.9rem;
+  padding: 24px 0;
+}
+
+.tb-listings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tb-listing-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.1s;
+}
+
+.tb-listing-item:hover { background: #fafafa; }
+
+.tb-listing-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tb-listing-course {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: #7A0019;
+}
+
+.tb-listing-seller {
+  font-size: 0.82rem;
+  color: #666;
+}
+
+.tb-listing-price {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111;
+}
+
+.tb-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.badge-green  { background: #d4edda; color: #1a6830; }
+.badge-yellow { background: #fff3cd; color: #856404; }
+.badge-orange { background: #ffe5c8; color: #8a4800; }
+
+/* ── Skeleton ── */
+.tb-detail-skeleton {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 32px;
+}
+
+.tb-sk-img-lg {
+  aspect-ratio: 2/3;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #eee 25%, #f5f5f5 50%, #eee 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.tb-sk-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 8px;
+}
+
+.sk-line {
+  border-radius: 6px;
+  background: linear-gradient(90deg, #eee 25%, #f5f5f5 50%, #eee 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.tb-not-found {
+  text-align: center;
+  padding: 80px 16px;
+}
+
+.tb-not-found h2 {
+  font-size: 1.25rem;
+  color: #222;
+  margin-bottom: 16px;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (max-width: 640px) {
+  .tb-detail-page { padding: 24px 16px 48px; }
+  .tb-detail-layout { grid-template-columns: 1fr; }
+  .tb-detail-img { max-width: 180px; }
+  .tb-detail-skeleton { grid-template-columns: 1fr; }
+  .tb-listing-info { flex-wrap: wrap; gap: 6px; }
+}

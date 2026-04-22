@@ -1,0 +1,135 @@
+.textbooks-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+.textbooks-header {
+  margin-bottom: 32px;
+}
+
+.textbooks-header h1 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #111;
+  margin-bottom: 4px;
+}
+
+.textbooks-sub {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+}
+
+.textbooks-search {
+  width: 100%;
+  max-width: 400px;
+  padding: 8px 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  font-size: 0.92rem;
+  font-family: inherit;
+}
+
+.textbooks-search:focus {
+  outline: 2px solid #7A0019;
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.textbooks-empty {
+  text-align: center;
+  padding: 60px 16px;
+  color: #999;
+}
+
+/* ── Grid ── */
+.textbooks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 20px;
+}
+
+.tb-card {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.tb-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.tb-card-img {
+  width: 100%;
+  aspect-ratio: 2/3;
+  object-fit: cover;
+  display: block;
+}
+
+.tb-card-body {
+  padding: 12px;
+}
+
+.tb-card-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #222;
+  line-height: 1.3;
+  margin-bottom: 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tb-card-author {
+  font-size: 0.78rem;
+  color: #666;
+}
+
+.tb-card-edition {
+  font-size: 0.72rem;
+  color: #999;
+  margin-top: 2px;
+}
+
+/* ── Skeleton ── */
+.tb-skeleton {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.tb-sk-img {
+  aspect-ratio: 2/3;
+  background: linear-gradient(90deg, #eee 25%, #f5f5f5 50%, #eee 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.tb-sk-line {
+  height: 12px;
+  border-radius: 6px;
+  margin: 8px 12px 0;
+  background: linear-gradient(90deg, #eee 25%, #f5f5f5 50%, #eee 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.tb-sk-line.wide { width: 70%; }
+.tb-sk-line.narrow { width: 45%; margin-bottom: 12px; }
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (max-width: 640px) {
+  .textbooks-page { padding: 24px 16px 48px; }
+  .textbooks-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+}
