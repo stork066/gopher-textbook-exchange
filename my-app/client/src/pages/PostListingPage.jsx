@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
+import ImageUploader from '../components/ImageUploader'
 import './PostListingPage.css'
 
 const CONDITIONS = ['New', 'Like New', 'Good', 'Acceptable']
@@ -16,7 +17,7 @@ const FIELD_LABELS = {
   price: 'Price',
 }
 
-function validate(form) {
+function validate(form, imageUrls) {
   const errors = {}
   for (const field of REQUIRED) {
     if (!form[field] || String(form[field]).trim() === '') {
@@ -25,6 +26,9 @@ function validate(form) {
   }
   if (form.price && (isNaN(Number(form.price)) || Number(form.price) <= 0)) {
     errors.price = 'Price must be a positive number.'
+  }
+  if (!imageUrls || imageUrls.length === 0) {
+    errors.images = 'Add at least one photo of the textbook.'
   }
   return errors
 }
@@ -43,8 +47,8 @@ export default function PostListingPage() {
     condition: '',
     price: '',
     description: '',
-    image_url: '',
   })
+  const [imageUrls, setImageUrls] = useState([])
   const [fieldErrors, setFieldErrors] = useState({})
   const [apiError, setApiError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
@@ -64,9 +68,16 @@ export default function PostListingPage() {
     }
   }
 
+  function handleImagesChange(urls) {
+    setImageUrls(urls)
+    if (fieldErrors.images && urls.length > 0) {
+      setFieldErrors((prev) => { const next = { ...prev }; delete next.images; return next })
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
-    const errors = validate(form)
+    const errors = validate(form, imageUrls)
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors)
       return
@@ -78,8 +89,9 @@ export default function PostListingPage() {
       const payload = {
         ...form,
         price: Number(form.price),
+        image_url: imageUrls[0],
+        image_urls: imageUrls,
       }
-      if (!payload.image_url) delete payload.image_url
       const res = await authFetch('/api/listings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -226,6 +238,18 @@ export default function PostListingPage() {
             </div>
           </div>
 
+          <div className="form-section-title">Photos</div>
+          <div className="form-field">
+            <label>
+              Photos <span className="req">*</span>{' '}
+              <span className="field-hint">(1–8, first photo is the cover)</span>
+            </label>
+            <ImageUploader value={imageUrls} onChange={handleImagesChange} />
+            {fieldErrors.images && (
+              <span className="field-error">{fieldErrors.images}</span>
+            )}
+          </div>
+
           <div className="form-section-title">Additional Info</div>
           <div className="form-field">
             <label>Description</label>
@@ -235,17 +259,6 @@ export default function PostListingPage() {
               onChange={handleChange}
               rows={4}
               placeholder="Describe the condition, any highlighting, missing pages, etc."
-            />
-          </div>
-
-          <div className="form-field">
-            <label>Image URL <span className="optional">(optional)</span></label>
-            <input
-              type="url"
-              name="image_url"
-              value={form.image_url}
-              onChange={handleChange}
-              placeholder="https://... (a placeholder will be used if blank)"
             />
           </div>
 
