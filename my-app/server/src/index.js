@@ -43,6 +43,16 @@ app.use('/api/listings', buyNowRouter)
 app.use('/api/cart', cartRouter)
 app.use('/api/account', accountRouter)
 
+// In production, serve the built client and let React Router handle non-API paths
+if (process.env.NODE_ENV === 'production') {
+  const distPath = path.join(__dirname, '../../client/dist')
+  app.use(express.static(distPath))
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) return next()
+    res.sendFile(path.join(distPath, 'index.html'))
+  })
+}
+
 // 404 catch-all
 app.use((_req, res) => {
   res.status(404).json({ error: 'Not found' })
