@@ -1,18 +1,8 @@
 const multer = require('multer')
-const path = require('path')
-const { v4: uuidv4 } = require('uuid')
 
-const UPLOAD_DIR = path.join(__dirname, '../../uploads')
-const MAX_SIZE = 5 * 1024 * 1024 // 5 MB
+const MAX_SIZE = 10 * 1024 * 1024 // 10 MB
+const MAX_FILES = 8
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase()
-    cb(null, `${uuidv4()}${ext}`)
-  },
-})
 
 const fileFilter = (_req, file, cb) => {
   if (ALLOWED_TYPES.includes(file.mimetype)) {
@@ -22,6 +12,10 @@ const fileFilter = (_req, file, cb) => {
   }
 }
 
-const upload = multer({ storage, fileFilter, limits: { fileSize: MAX_SIZE } })
+const upload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter,
+  limits: { fileSize: MAX_SIZE, files: MAX_FILES },
+})
 
-module.exports = { upload, UPLOAD_DIR }
+module.exports = { upload, MAX_FILES, MAX_SIZE, ALLOWED_TYPES }

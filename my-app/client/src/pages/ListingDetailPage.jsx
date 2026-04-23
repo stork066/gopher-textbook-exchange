@@ -1,9 +1,20 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useToast } from '../context/ToastContext'
+import ImageUploader from '../components/ImageUploader'
 import './ListingDetailPage.css'
+
+const PLACEHOLDER = 'https://placehold.co/400x600?text=Textbook'
+
+function imagesFor(listing) {
+  if (!listing) return []
+  if (Array.isArray(listing.image_urls) && listing.image_urls.length > 0) {
+    return listing.image_urls
+  }
+  return listing.image_url ? [listing.image_url] : []
+}
 
 function ConditionBadge({ condition }) {
   const cls =
@@ -49,6 +60,12 @@ export default function ListingDetailPage() {
   const [buyingNow, setBuyingNow] = useState(false)
   const [addingToCart, setAddingToCart] = useState(false)
 
+  // Gallery + image-edit state
+  const [selectedImgIdx, setSelectedImgIdx] = useState(0)
+  const [editingImages, setEditingImages] = useState(false)
+  const [draftImages, setDraftImages] = useState([])
+  const [savingImages, setSavingImages] = useState(false)
+
   useEffect(() => {
     setLoading(true)
     setNotFound(false)
@@ -58,13 +75,16 @@ export default function ListingDetailPage() {
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         return r.json()
       })
-      .then((data) => { if (data) { setListing(data); setLoading(false) } })
+      .then((data) => { if (data) { setListing(data); setLoading(false); setSelectedImgIdx(0) } })
       .catch(() => {
         showToast('Failed to load listing. Please try again.', 'error')
         setNotFound(true)
         setLoading(false)
       })
   }, [id, showToast])
+
+  const images = useMemo(() => imagesFor(listing), [listing])
+  const mainImage = images[selectedImgIdx] || images[0] || PLACEHOLDER
 
   const isOwner = user && listing && listing.seller_id === user.user_id
   const isAvailable = listing && listing.status === 'Available'
@@ -131,6 +151,44 @@ export default function ListingDetailPage() {
     setSubmitting(false)
   }
 
+  function startEditImages() {
+    setDraftImages([...images])
+    setEditingImages(true)
+  }
+
+  function cancelEditImages() {
+    setDraftImages([])
+    setEditingImages(false)
+  }
+
+  async function saveEditImages() {
+    if (draftImages.length === 0) {
+      showToast('At least one photo is required.', 'error')
+      return
+    }
+    setSavingImages(true)
+    try {
+      const res = await authFetch(`/api/listings/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image_urls: draftImages,
+          image_url: draftImages[0],
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to save')
+      setListing(data)
+      setSelectedImgIdx(0)
+      setEditingImages(false)
+      setDraftImages([])
+      showToast('Photos updated.', 'success')
+    } catch (err) {
+      showToast(err.message || 'Failed to save photos', 'error')
+    }
+    setSavingImages(false)
+  }
+
   if (loading) {
     return (
       <div className="detail-page">
@@ -169,12 +227,68 @@ export default function ListingDetailPage() {
 
         <div className="detail-layout">
           <div className="detail-img-col">
-            <img
-              src={listing.image_url || 'https://placehold.co/400x600?text=Textbook'}
-              alt={listing.textbook_title}
-              className="detail-img"
-              onError={(e) => { e.target.src = 'https://placehold.co/400x600?text=Textbook' }}
-            />
+            {editingImages ? (
+              <div className="image-edit-panel">
+                <ImageUploader value={draftImages} onChange={setDraftImages} disabled={savingImages} />
+                <div className="image-edit-actions">
+                  <button
+                    type="button"
+                    className="submit-btn"
+                    onClick={saveEditImages}
+                    disabled={savingImages || draftImages.length === 0}
+                  >
+                    {savingImages && <span className="btn-spinner" />}
+                    {savingImages ? 'Saving...' : 'Save Photos'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={cancelEditImages}
+                    disabled={savingImages}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <img
+                  src={mainImage}
+                  alt={listing.textbook_title}
+                  className="detail-img"
+                  onError={(e) => { e.target.src = PLACEHOLDER }}
+                />
+                {images.length > 1 && (
+                  <div className="gallery-thumbs" role="listbox" aria-label="Listing photos">
+                    {images.map((url, idx) => (
+                      <button
+                        key={url + idx}
+                        type="button"
+                        role="option"
+                        aria-selected={idx === selectedImgIdx}
+                        className={`gallery-thumb${idx === selectedImgIdx ? ' gallery-thumb-active' : ''}`}
+                        onClick={() => setSelectedImgIdx(idx)}
+                      >
+                        <img
+                          src={url}
+                          alt={`${listing.textbook_title} photo ${idx + 1}`}
+                          onError={(e) => { e.target.src = PLACEHOLDER }}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {isOwner && (
+                  <button
+                    type="button"
+                    className="btn-manage-images"
+                    onClick={startEditImages}
+                  >
+                    Manage Photos
+                  </button>
+                )}
+              </>
+            )}
           </div>
 
           <div className="detail-info-col">
@@ -205,7 +319,6 @@ export default function ListingDetailPage() {
               <p className="detail-description">{listing.description}</p>
             )}
 
-            {/* Action buttons */}
             {isAvailable && !isOwner && (
               <div className="detail-actions">
                 <button className="btn-buy-now" onClick={handleBuyNow} disabled={buyingNow}>
@@ -233,7 +346,6 @@ export default function ListingDetailPage() {
           </div>
         </div>
 
-        {/* Offer section */}
         {isAvailable && !isOwner && (
           <div className="offer-section">
             <h2 className="offer-heading">Make an Offer</h2>

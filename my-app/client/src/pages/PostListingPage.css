@@ -77,6 +77,12 @@
   font-size: 0.8rem;
 }
 
+.field-hint {
+  font-weight: 400;
+  color: #888;
+  font-size: 0.8rem;
+}
+
 .form-field input,
 .form-field select,
 .form-field textarea {

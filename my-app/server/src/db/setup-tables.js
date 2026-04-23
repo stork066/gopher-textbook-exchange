@@ -207,14 +207,29 @@ const tables = [
   },
 ]
 
+// Against real AWS, convert any provisioned-throughput definitions to
+// on-demand billing so the app stays inside the free tier.
+function toOnDemand(def) {
+  const { ProvisionedThroughput: _pt, GlobalSecondaryIndexes: gsis, ...rest } = def
+  const out = { ...rest, BillingMode: 'PAY_PER_REQUEST' }
+  if (gsis) {
+    out.GlobalSecondaryIndexes = gsis.map(({ ProvisionedThroughput: _p, ...g }) => g)
+  }
+  return out
+}
+
 async function setup() {
+  const isLocal = Boolean(process.env.DYNAMODB_ENDPOINT)
+  console.log(`Target: ${isLocal ? 'local DynamoDB' : 'AWS DynamoDB (on-demand billing)'}`)
+
   const { TableNames: existing } = await client.send(new ListTablesCommand({}))
 
   for (const def of tables) {
     if (existing.includes(def.TableName)) {
       console.log(`  [skip] ${def.TableName} already exists`)
     } else {
-      await client.send(new CreateTableCommand(def))
+      const params = isLocal ? def : toOnDemand(def)
+      await client.send(new CreateTableCommand(params))
       console.log(`  [ok] Created ${def.TableName}`)
     }
   }
