@@ -11,6 +11,8 @@ const tables = [
       { AttributeName: 'course_number', AttributeType: 'S' },
       { AttributeName: 'status', AttributeType: 'S' },
       { AttributeName: 'created_at', AttributeType: 'S' },
+      { AttributeName: 'seller_id', AttributeType: 'S' },
+      { AttributeName: 'textbook_id', AttributeType: 'S' },
     ],
     KeySchema: [{ AttributeName: 'listing_id', KeyType: 'HASH' }],
     GlobalSecondaryIndexes: [
@@ -32,6 +34,24 @@ const tables = [
         Projection: { ProjectionType: 'ALL' },
         ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 },
       },
+      {
+        IndexName: 'SellerListingsIndex',
+        KeySchema: [
+          { AttributeName: 'seller_id', KeyType: 'HASH' },
+          { AttributeName: 'created_at', KeyType: 'RANGE' },
+        ],
+        Projection: { ProjectionType: 'ALL' },
+        ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 },
+      },
+      {
+        IndexName: 'TextbookListingsIndex',
+        KeySchema: [
+          { AttributeName: 'textbook_id', KeyType: 'HASH' },
+          { AttributeName: 'created_at', KeyType: 'RANGE' },
+        ],
+        Projection: { ProjectionType: 'ALL' },
+        ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 },
+      },
     ],
     ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 },
   },
@@ -39,6 +59,23 @@ const tables = [
     TableName: 'Departments',
     AttributeDefinitions: [{ AttributeName: 'department_code', AttributeType: 'S' }],
     KeySchema: [{ AttributeName: 'department_code', KeyType: 'HASH' }],
+    ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 },
+  },
+  {
+    TableName: 'Users',
+    AttributeDefinitions: [
+      { AttributeName: 'user_id', AttributeType: 'S' },
+      { AttributeName: 'email', AttributeType: 'S' },
+    ],
+    KeySchema: [{ AttributeName: 'user_id', KeyType: 'HASH' }],
+    GlobalSecondaryIndexes: [
+      {
+        IndexName: 'EmailIndex',
+        KeySchema: [{ AttributeName: 'email', KeyType: 'HASH' }],
+        Projection: { ProjectionType: 'ALL' },
+        ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 },
+      },
+    ],
     ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 },
   },
   {
@@ -60,6 +97,112 @@ const tables = [
         ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 },
       },
     ],
+    ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 },
+  },
+  {
+    TableName: 'Textbooks',
+    AttributeDefinitions: [
+      { AttributeName: 'textbook_id', AttributeType: 'S' },
+      { AttributeName: 'isbn', AttributeType: 'S' },
+    ],
+    KeySchema: [{ AttributeName: 'textbook_id', KeyType: 'HASH' }],
+    GlobalSecondaryIndexes: [
+      {
+        IndexName: 'IsbnIndex',
+        KeySchema: [{ AttributeName: 'isbn', KeyType: 'HASH' }],
+        Projection: { ProjectionType: 'ALL' },
+        ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 },
+      },
+    ],
+    ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 },
+  },
+  {
+    TableName: 'Conversations',
+    AttributeDefinitions: [
+      { AttributeName: 'conversation_id', AttributeType: 'S' },
+      { AttributeName: 'buyer_id', AttributeType: 'S' },
+      { AttributeName: 'seller_id', AttributeType: 'S' },
+      { AttributeName: 'last_message_at', AttributeType: 'S' },
+    ],
+    KeySchema: [{ AttributeName: 'conversation_id', KeyType: 'HASH' }],
+    GlobalSecondaryIndexes: [
+      {
+        IndexName: 'BuyerConversationsIndex',
+        KeySchema: [
+          { AttributeName: 'buyer_id', KeyType: 'HASH' },
+          { AttributeName: 'last_message_at', KeyType: 'RANGE' },
+        ],
+        Projection: { ProjectionType: 'ALL' },
+        ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 },
+      },
+      {
+        IndexName: 'SellerConversationsIndex',
+        KeySchema: [
+          { AttributeName: 'seller_id', KeyType: 'HASH' },
+          { AttributeName: 'last_message_at', KeyType: 'RANGE' },
+        ],
+        Projection: { ProjectionType: 'ALL' },
+        ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 },
+      },
+    ],
+    ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 },
+  },
+  {
+    TableName: 'Messages',
+    AttributeDefinitions: [
+      { AttributeName: 'message_id', AttributeType: 'S' },
+      { AttributeName: 'conversation_id', AttributeType: 'S' },
+      { AttributeName: 'created_at', AttributeType: 'S' },
+    ],
+    KeySchema: [{ AttributeName: 'message_id', KeyType: 'HASH' }],
+    GlobalSecondaryIndexes: [
+      {
+        IndexName: 'ConversationMessagesIndex',
+        KeySchema: [
+          { AttributeName: 'conversation_id', KeyType: 'HASH' },
+          { AttributeName: 'created_at', KeyType: 'RANGE' },
+        ],
+        Projection: { ProjectionType: 'ALL' },
+        ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 },
+      },
+    ],
+    ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 },
+  },
+  {
+    TableName: 'Transactions',
+    AttributeDefinitions: [
+      { AttributeName: 'transaction_id', AttributeType: 'S' },
+      { AttributeName: 'buyer_id', AttributeType: 'S' },
+      { AttributeName: 'seller_id', AttributeType: 'S' },
+      { AttributeName: 'created_at', AttributeType: 'S' },
+    ],
+    KeySchema: [{ AttributeName: 'transaction_id', KeyType: 'HASH' }],
+    GlobalSecondaryIndexes: [
+      {
+        IndexName: 'BuyerTransactionsIndex',
+        KeySchema: [
+          { AttributeName: 'buyer_id', KeyType: 'HASH' },
+          { AttributeName: 'created_at', KeyType: 'RANGE' },
+        ],
+        Projection: { ProjectionType: 'ALL' },
+        ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 },
+      },
+      {
+        IndexName: 'SellerTransactionsIndex',
+        KeySchema: [
+          { AttributeName: 'seller_id', KeyType: 'HASH' },
+          { AttributeName: 'created_at', KeyType: 'RANGE' },
+        ],
+        Projection: { ProjectionType: 'ALL' },
+        ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 },
+      },
+    ],
+    ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 },
+  },
+  {
+    TableName: 'Carts',
+    AttributeDefinitions: [{ AttributeName: 'user_id', AttributeType: 'S' }],
+    KeySchema: [{ AttributeName: 'user_id', KeyType: 'HASH' }],
     ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 },
   },
 ]
