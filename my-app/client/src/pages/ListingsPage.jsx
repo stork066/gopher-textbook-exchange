@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useToast } from '../context/ToastContext'
+import DepartmentSearch from '../components/DepartmentSearch'
 import './ListingsPage.css'
 
 const CONDITIONS = ['New', 'Like New', 'Good', 'Acceptable']
@@ -24,7 +25,6 @@ function ConditionBadge({ condition }) {
 
 export default function ListingsPage() {
   const showToast = useToast()
-  const [departments, setDepartments] = useState([])
   const [listings, setListings] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -49,13 +49,6 @@ export default function ListingsPage() {
   useEffect(() => {
     setVisibleCount(PAGE_SIZE)
   }, [department, courseNumber, conditions, sort])
-
-  useEffect(() => {
-    fetch('/api/departments')
-      .then((r) => r.json())
-      .then(setDepartments)
-      .catch(() => {})
-  }, [])
 
   const fetchListings = useCallback(() => {
     setLoading(true)
@@ -117,18 +110,11 @@ export default function ListingsPage() {
 
         <div className="filter-group">
           <label className="filter-label">Department</label>
-          <select
+          <DepartmentSearch
             value={department}
-            onChange={(e) => setDepartment(e.target.value)}
-            className="filter-select"
-          >
-            <option value="">All Departments</option>
-            {departments.map((d) => (
-              <option key={d.department_code} value={d.department_code}>
-                {d.department_code} — {d.department_name}
-              </option>
-            ))}
-          </select>
+            onChange={setDepartment}
+            placeholder="All Departments"
+          />
         </div>
 
         <div className="filter-group">
