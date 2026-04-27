@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import ImageUploader from '../components/ImageUploader'
+import DepartmentSearch from '../components/DepartmentSearch'
 import './PostListingPage.css'
 
 const CONDITIONS = ['New', 'Like New', 'Good', 'Acceptable']
@@ -37,7 +38,6 @@ export default function PostListingPage() {
   const navigate = useNavigate()
   const { user, authFetch } = useAuth()
   const showToast = useToast()
-  const [departments, setDepartments] = useState([])
   const [form, setForm] = useState({
     course_department: '',
     course_number: '',
@@ -52,13 +52,6 @@ export default function PostListingPage() {
   const [fieldErrors, setFieldErrors] = useState({})
   const [apiError, setApiError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
-
-  useEffect(() => {
-    fetch('/api/departments')
-      .then((r) => r.json())
-      .then(setDepartments)
-      .catch(() => {})
-  }, [])
 
   function handleChange(e) {
     const { name, value } = e.target
@@ -131,14 +124,21 @@ export default function PostListingPage() {
               <label>
                 Department <span className="req">*</span>
               </label>
-              <select name="course_department" value={form.course_department} onChange={handleChange}>
-                <option value="">Select department...</option>
-                {departments.map((d) => (
-                  <option key={d.department_code} value={d.department_code}>
-                    {d.department_code} — {d.department_name}
-                  </option>
-                ))}
-              </select>
+              <DepartmentSearch
+                value={form.course_department}
+                onChange={(code) => {
+                  setForm((prev) => ({ ...prev, course_department: code }))
+                  if (fieldErrors.course_department) {
+                    setFieldErrors((prev) => {
+                      const next = { ...prev }
+                      delete next.course_department
+                      return next
+                    })
+                  }
+                }}
+                placeholder="Select department..."
+                required
+              />
               {fieldErrors.course_department && (
                 <span className="field-error">{fieldErrors.course_department}</span>
               )}
