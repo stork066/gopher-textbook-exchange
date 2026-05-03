@@ -82,13 +82,21 @@ export default function MessagesPage() {
       const res = await authFetch(`/api/conversations/${activeId}/${action}`, {
         method: 'POST',
       })
+      const data = await res.json().catch(() => ({}))
       if (res.ok) {
-        showToast(`Offer ${action}ed`, 'success')
+        const labels = {
+          accept: 'Offer accepted',
+          decline: 'Offer declined',
+          sold: 'Marked as sold',
+        }
+        showToast(labels[action] || 'Done', 'success')
         await fetchMessages(activeId)
         await fetchConversations()
+      } else {
+        showToast(data.error || `Failed to ${action}`, 'error')
       }
     } catch {
-      showToast(`Failed to ${action} offer`, 'error')
+      showToast(`Failed to ${action}`, 'error')
     }
   }
 
@@ -154,27 +162,47 @@ export default function MessagesPage() {
               </div>
 
               <div className="message-list">
-                {messages.map((m) => (
-                  <div
-                    key={m.message_id}
-                    className={`message-bubble ${m.sender_id === user.user_id ? 'mine' : 'theirs'}${m.type !== 'text' ? ` msg-${m.type}` : ''}`}
-                  >
-                    <div className="bubble-body">{m.body}</div>
-                    <div className="bubble-time">{formatTime(m.created_at)}</div>
-                  </div>
-                ))}
+                {messages.map((m) => {
+                  const showAmount =
+                    (m.type === 'offer' || m.type === 'counter' || m.type === 'buy_now' || m.type === 'sold') &&
+                    m.offer_amount != null
+                  return (
+                    <div
+                      key={m.message_id}
+                      className={`message-bubble ${m.sender_id === user.user_id ? 'mine' : 'theirs'}${m.type !== 'text' ? ` msg-${m.type}` : ''}`}
+                    >
+                      {showAmount && (
+                        <div className="bubble-amount">${Number(m.offer_amount).toFixed(2)}</div>
+                      )}
+                      <div className="bubble-body">{m.body}</div>
+                      <div className="bubble-time">{formatTime(m.created_at)}</div>
+                    </div>
+                  )
+                })}
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Action bar for offers/buy-now (seller only).
-                  Label tracks the latest unresolved request type. */}
+              {/* Action bar (seller only). Three states:
+                  - convo.status 'accepted'  → Mark as Sold (one-step finalization)
+                  - convo.status 'completed' → no actions (already sold)
+                  - otherwise → derive from messages: latest unresolved
+                    offer/counter/buy_now shows Accept/Decline. */}
               {(() => {
                 if (activeConvo?.role !== 'seller') return null
-                if (activeConvo?.status === 'accepted' || activeConvo?.status === 'declined') return null
+                if (activeConvo?.status === 'completed') return null
+                if (activeConvo?.status === 'accepted') {
+                  return (
+                    <div className="offer-actions">
+                      <button className="action-mark-sold" onClick={() => handleAction('sold')}>
+                        Mark as Sold
+                      </button>
+                    </div>
+                  )
+                }
                 let pending = null
                 for (let i = messages.length - 1; i >= 0; i--) {
                   const t = messages[i].type
-                  if (t === 'accept' || t === 'decline') break
+                  if (t === 'accept' || t === 'decline' || t === 'sold') break
                   if (t === 'offer' || t === 'counter' || t === 'buy_now') { pending = t; break }
                 }
                 if (!pending) return null

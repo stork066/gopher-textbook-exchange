@@ -72,7 +72,7 @@ router.get('/', requireAuth, async (req, res) => {
 
       if (convo) {
         conversation_id = convo.conversation_id
-        if (convo.status === 'accepted') {
+        if (convo.status === 'accepted' || convo.status === 'completed') {
           status = 'purchased'
         } else if (listing.status !== 'Available') {
           status = 'unavailable'

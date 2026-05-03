@@ -398,6 +398,110 @@ router.post('/:id/decline', requireAuth, async (req, res) => {
   }
 })
 
+// POST /api/conversations/:id/sold — seller marks an accepted listing as sold.
+// Flips the listing to Sold, writes a Transaction, and posts a 'sold' message.
+router.post('/:id/sold', requireAuth, async (req, res) => {
+  try {
+    const convo = await getConvoIfParticipant(req.params.id, req.user.user_id)
+    if (!convo) return res.status(404).json({ error: 'Conversation not found' })
+    if (convo.seller_id !== req.user.user_id) {
+      return res.status(403).json({ error: 'Only the seller can mark as sold' })
+    }
+    if (convo.status !== 'accepted') {
+      return res.status(400).json({ error: 'Accept the offer before marking as sold' })
+    }
+    if (!convo.listing_id) {
+      return res.status(400).json({ error: 'Conversation has no associated listing' })
+    }
+
+    const listingResult = await docClient.send(
+      new GetCommand({ TableName: 'Listings', Key: { listing_id: convo.listing_id } })
+    )
+    const listing = listingResult.Item
+    if (!listing) return res.status(404).json({ error: 'Listing not found' })
+    if (listing.status === 'Sold') {
+      return res.status(400).json({ error: 'Listing is already sold' })
+    }
+
+    // Find the agreed price by walking back from the most recent accept to the
+    // request that triggered it. Falls back to listing price.
+    const msgsResult = await docClient.send(
+      new QueryCommand({
+        TableName: 'Messages',
+        IndexName: 'ConversationMessagesIndex',
+        KeyConditionExpression: 'conversation_id = :cid',
+        ExpressionAttributeValues: { ':cid': req.params.id },
+        ScanIndexForward: false,
+      })
+    )
+    const msgs = msgsResult.Items || []
+    let amount = null
+    let foundAccept = false
+    for (const m of msgs) {
+      if (!foundAccept) {
+        if (m.type === 'accept') foundAccept = true
+        continue
+      }
+      if (m.type === 'offer' || m.type === 'counter' || m.type === 'buy_now') {
+        if (m.offer_amount != null) amount = Number(m.offer_amount)
+        break
+      }
+    }
+    if (amount == null) amount = Number(listing.price)
+
+    const now = new Date().toISOString()
+
+    await docClient.send(
+      new UpdateCommand({
+        TableName: 'Listings',
+        Key: { listing_id: convo.listing_id },
+        UpdateExpression: 'SET #s = :status, updated_at = :now',
+        ExpressionAttributeNames: { '#s': 'status' },
+        ExpressionAttributeValues: { ':status': 'Sold', ':now': now },
+      })
+    )
+
+    const txn = {
+      transaction_id: uuidv4(),
+      listing_id: convo.listing_id,
+      buyer_id: convo.buyer_id,
+      seller_id: convo.seller_id,
+      amount,
+      listing_title: listing.textbook_title,
+      type: 'sale',
+      created_at: now,
+    }
+    await docClient.send(new PutCommand({ TableName: 'Transactions', Item: txn }))
+
+    const msg = {
+      message_id: uuidv4(),
+      conversation_id: req.params.id,
+      sender_id: req.user.user_id,
+      sender_name: req.user.display_name,
+      body: `Marked as sold for $${amount.toFixed(2)}.`,
+      type: 'sold',
+      offer_amount: amount,
+      created_at: now,
+    }
+    await docClient.send(new PutCommand({ TableName: 'Messages', Item: msg }))
+
+    await docClient.send(
+      new UpdateCommand({
+        TableName: 'Conversations',
+        Key: { conversation_id: req.params.id },
+        UpdateExpression: 'SET last_message_at = :now, #st = :status',
+        ExpressionAttributeNames: { '#st': 'status' },
+        ExpressionAttributeValues: { ':now': now, ':status': 'completed' },
+      })
+    )
+
+    res.json({ message: 'Marked as sold', transaction: txn, msg })
+  } catch (err) {
+    console.error('POST /api/conversations/:id/sold error:', err.message)
+    res.status(500).json({ error: 'Failed to mark as sold' })
+  }
+})
+
 // POST /api/conversations/:id/counter — counter-offer
 router.post(
   '/:id/counter',
