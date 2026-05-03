@@ -166,15 +166,27 @@ export default function MessagesPage() {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Action bar for offers (seller only) */}
-              {activeConvo?.role === 'seller' && activeConvo?.status !== 'accepted' && activeConvo?.status !== 'declined' && messages.some((m) => m.type === 'offer' || m.type === 'counter' || m.type === 'buy_now') && (
-                <div className="offer-actions">
-                  <button className="action-accept" onClick={() => handleAction('accept')}>
-                    {messages.some((m) => m.type === 'buy_now') && !messages.some((m) => m.type === 'offer' || m.type === 'counter') ? 'Accept Buy Now' : 'Accept Offer'}
-                  </button>
-                  <button className="action-decline" onClick={() => handleAction('decline')}>Decline</button>
-                </div>
-              )}
+              {/* Action bar for offers/buy-now (seller only).
+                  Label tracks the latest unresolved request type. */}
+              {(() => {
+                if (activeConvo?.role !== 'seller') return null
+                if (activeConvo?.status === 'accepted' || activeConvo?.status === 'declined') return null
+                let pending = null
+                for (let i = messages.length - 1; i >= 0; i--) {
+                  const t = messages[i].type
+                  if (t === 'accept' || t === 'decline') break
+                  if (t === 'offer' || t === 'counter' || t === 'buy_now') { pending = t; break }
+                }
+                if (!pending) return null
+                return (
+                  <div className="offer-actions">
+                    <button className="action-accept" onClick={() => handleAction('accept')}>
+                      {pending === 'buy_now' ? 'Accept Buy Now' : 'Accept Offer'}
+                    </button>
+                    <button className="action-decline" onClick={() => handleAction('decline')}>Decline</button>
+                  </div>
+                )
+              })()}
 
               <form className="message-composer" onSubmit={handleSend}>
                 <input

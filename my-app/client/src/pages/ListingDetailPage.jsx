@@ -59,6 +59,9 @@ export default function ListingDetailPage() {
   const [submitting, setSubmitting] = useState(false)
   const [buyingNow, setBuyingNow] = useState(false)
   const [addingToCart, setAddingToCart] = useState(false)
+  // Latest unresolved request type for this buyer on this listing:
+  // 'offer' | 'counter' | 'buy_now' | null
+  const [pendingType, setPendingType] = useState(null)
 
   // Gallery + image-edit state
   const [selectedImgIdx, setSelectedImgIdx] = useState(0)
@@ -89,8 +92,42 @@ export default function ListingDetailPage() {
   const isOwner = user && listing && listing.seller_id === user.user_id
   const isAvailable = listing && listing.status === 'Available'
 
+  // Pull the buyer's existing conversation for this listing (if any) and
+  // determine the latest unresolved request, so we can throttle the UI.
+  useEffect(() => {
+    if (!user || !listing || isOwner) { setPendingType(null); return }
+    let cancelled = false
+    ;(async () => {
+      try {
+        const listRes = await authFetch('/api/conversations')
+        if (!listRes.ok) return
+        const convos = await listRes.json()
+        const mine = convos.find(
+          (c) => c.listing_id === id && c.buyer_id === user.user_id
+        )
+        if (!mine) { if (!cancelled) setPendingType(null); return }
+        const convoRes = await authFetch(`/api/conversations/${mine.conversation_id}`)
+        if (!convoRes.ok) return
+        const data = await convoRes.json()
+        const msgs = data.messages || []
+        let pending = null
+        for (let i = msgs.length - 1; i >= 0; i--) {
+          const t = msgs[i].type
+          if (t === 'accept' || t === 'decline') break
+          if (t === 'offer' || t === 'counter' || t === 'buy_now') { pending = t; break }
+        }
+        if (!cancelled) setPendingType(pending)
+      } catch { /* ignore — server still enforces */ }
+    })()
+    return () => { cancelled = true }
+  }, [user, listing, isOwner, id, authFetch])
+
   async function handleBuyNow() {
     if (!user) { navigate('/login'); return }
+    if (pendingType === 'buy_now') {
+      showToast('You already have a pending Buy Now request on this listing.', 'error')
+      return
+    }
     setBuyingNow(true)
     try {
       const price = Number(listing.price).toFixed(2)
@@ -107,6 +144,7 @@ export default function ListingDetailPage() {
       const data = await res.json()
       if (res.ok) {
         showToast('Buy Now request sent! Check your messages.', 'success')
+        setPendingType('buy_now')
       } else {
         showToast(data.error || 'Failed to send Buy Now request', 'error')
       }
@@ -131,6 +169,15 @@ export default function ListingDetailPage() {
   async function handleMakeOffer(e) {
     e.preventDefault()
     if (!user) { navigate('/login'); return }
+    if (pendingType) {
+      showToast(
+        pendingType === 'buy_now'
+          ? 'You already have a pending Buy Now request on this listing.'
+          : 'You already have a pending offer on this listing.',
+        'error'
+      )
+      return
+    }
     if (!offerAmount || Number(offerAmount) <= 0) {
       showToast('Enter a valid offer amount', 'error')
       return
@@ -150,6 +197,7 @@ export default function ListingDetailPage() {
         showToast('Offer sent! Check your messages.', 'success')
         setOfferAmount('')
         setOfferMessage('')
+        setPendingType('offer')
       } else {
         const data = await res.json()
         showToast(data.error || 'Failed to send offer', 'error')
@@ -329,14 +377,30 @@ export default function ListingDetailPage() {
             )}
 
             {isAvailable && !isOwner && (
-              <div className="detail-actions">
-                <button className="btn-buy-now" onClick={handleBuyNow} disabled={buyingNow}>
-                  {buyingNow ? 'Processing...' : 'Buy Now'}
-                </button>
-                <button className="btn-add-cart" onClick={handleAddToCart} disabled={addingToCart}>
-                  {addingToCart ? 'Adding...' : 'Add to Cart'}
-                </button>
-              </div>
+              <>
+                <div className="detail-actions">
+                  <button
+                    className="btn-buy-now"
+                    onClick={handleBuyNow}
+                    disabled={buyingNow || pendingType === 'buy_now'}
+                  >
+                    {buyingNow ? 'Processing...' : 'Buy Now'}
+                  </button>
+                  <button className="btn-add-cart" onClick={handleAddToCart} disabled={addingToCart}>
+                    {addingToCart ? 'Adding...' : 'Add to Cart'}
+                  </button>
+                </div>
+                {pendingType === 'buy_now' && (
+                  <p className="pending-hint">
+                    You have a pending Buy Now request — wait for the seller's response.
+                  </p>
+                )}
+                {(pendingType === 'offer' || pendingType === 'counter') && (
+                  <p className="pending-hint">
+                    You have a pending offer. You can still send a Buy Now request at full price.
+                  </p>
+                )}
+              </>
             )}
 
             {isOwner && (
@@ -358,35 +422,43 @@ export default function ListingDetailPage() {
         {isAvailable && !isOwner && (
           <div className="offer-section">
             <h2 className="offer-heading">Make an Offer</h2>
-            <form className="offer-form" onSubmit={handleMakeOffer}>
-              <div className="form-row">
-                <div className="form-field">
-                  <label>Offer Amount ($) <span className="req">*</span></label>
-                  <input
-                    type="number"
-                    value={offerAmount}
-                    onChange={(e) => setOfferAmount(e.target.value)}
-                    min="0.01"
-                    step="0.01"
-                    placeholder={`e.g. ${Math.round(listing.price * 0.85)}`}
-                    required
-                  />
+            {pendingType ? (
+              <p className="pending-hint">
+                {pendingType === 'buy_now'
+                  ? 'You have a pending Buy Now request — wait for the seller to respond before sending another request.'
+                  : 'You already have a pending offer on this listing. Wait for the seller to respond, or send a Buy Now request at full price.'}
+              </p>
+            ) : (
+              <form className="offer-form" onSubmit={handleMakeOffer}>
+                <div className="form-row">
+                  <div className="form-field">
+                    <label>Offer Amount ($) <span className="req">*</span></label>
+                    <input
+                      type="number"
+                      value={offerAmount}
+                      onChange={(e) => setOfferAmount(e.target.value)}
+                      min="0.01"
+                      step="0.01"
+                      placeholder={`e.g. ${Math.round(listing.price * 0.85)}`}
+                      required
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label>Message (optional)</label>
+                    <input
+                      type="text"
+                      value={offerMessage}
+                      onChange={(e) => setOfferMessage(e.target.value)}
+                      placeholder="I can meet on campus..."
+                    />
+                  </div>
                 </div>
-                <div className="form-field">
-                  <label>Message (optional)</label>
-                  <input
-                    type="text"
-                    value={offerMessage}
-                    onChange={(e) => setOfferMessage(e.target.value)}
-                    placeholder="I can meet on campus..."
-                  />
-                </div>
-              </div>
-              <button type="submit" className="submit-btn" disabled={submitting}>
-                {submitting && <span className="btn-spinner" />}
-                {submitting ? 'Sending...' : 'Send Offer'}
-              </button>
-            </form>
+                <button type="submit" className="submit-btn" disabled={submitting}>
+                  {submitting && <span className="btn-spinner" />}
+                  {submitting ? 'Sending...' : 'Send Offer'}
+                </button>
+              </form>
+            )}
           </div>
         )}
       </div>

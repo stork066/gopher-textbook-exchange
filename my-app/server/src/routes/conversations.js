@@ -49,8 +49,29 @@ router.post(
       let conversationId
       const now = new Date().toISOString()
 
+      const newType = is_buy_now ? 'buy_now' : (offer_amount ? 'offer' : 'text')
+
       if (existingConvo) {
         conversationId = existingConvo.conversation_id
+
+        // Throttle: at most one pending offer/counter/buy_now per listing.
+        // Buy Now may override a pending offer/counter, but not another buy_now.
+        if (newType === 'offer' || newType === 'buy_now') {
+          const pending = await getLatestPendingType(conversationId)
+          if (newType === 'offer' && pending) {
+            return res.status(409).json({
+              error: pending === 'buy_now'
+                ? 'You already have a pending Buy Now request on this listing.'
+                : 'You already have a pending offer on this listing.',
+            })
+          }
+          if (newType === 'buy_now' && pending === 'buy_now') {
+            return res.status(409).json({
+              error: 'You already have a pending Buy Now request on this listing.',
+            })
+          }
+        }
+
         // Update last_message_at
         await docClient.send(
           new UpdateCommand({
@@ -84,7 +105,7 @@ router.post(
         sender_id: buyerId,
         sender_name: req.user.display_name,
         body: message,
-        type: is_buy_now ? 'buy_now' : (offer_amount ? 'offer' : 'text'),
+        type: newType,
         created_at: now,
       }
       if (offer_amount) msg.offer_amount = Number(offer_amount)
@@ -419,6 +440,26 @@ router.post(
     }
   }
 )
+
+// Walk a conversation's messages newest-first; return the type of the latest
+// unresolved offer/counter/buy_now, or null if the most recent action was an
+// accept/decline (request resolved) or there are no requests at all.
+async function getLatestPendingType(conversationId) {
+  const result = await docClient.send(
+    new QueryCommand({
+      TableName: 'Messages',
+      IndexName: 'ConversationMessagesIndex',
+      KeyConditionExpression: 'conversation_id = :cid',
+      ExpressionAttributeValues: { ':cid': conversationId },
+      ScanIndexForward: false,
+    })
+  )
+  for (const m of result.Items || []) {
+    if (m.type === 'accept' || m.type === 'decline') return null
+    if (m.type === 'offer' || m.type === 'counter' || m.type === 'buy_now') return m.type
+  }
+  return null
+}
 
 async function getConvoIfParticipant(convoId, userId) {
   const result = await docClient.send(
