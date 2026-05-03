@@ -167,9 +167,11 @@ export default function MessagesPage() {
               </div>
 
               {/* Action bar for offers (seller only) */}
-              {activeConvo?.role === 'seller' && activeConvo?.status !== 'accepted' && activeConvo?.status !== 'declined' && messages.some((m) => m.type === 'offer' || m.type === 'counter') && (
+              {activeConvo?.role === 'seller' && activeConvo?.status !== 'accepted' && activeConvo?.status !== 'declined' && messages.some((m) => m.type === 'offer' || m.type === 'counter' || m.type === 'buy_now') && (
                 <div className="offer-actions">
-                  <button className="action-accept" onClick={() => handleAction('accept')}>Accept Offer</button>
+                  <button className="action-accept" onClick={() => handleAction('accept')}>
+                    {messages.some((m) => m.type === 'buy_now') && !messages.some((m) => m.type === 'offer' || m.type === 'counter') ? 'Accept Buy Now' : 'Accept Offer'}
+                  </button>
                   <button className="action-decline" onClick={() => handleAction('decline')}>Decline</button>
                 </div>
               )}

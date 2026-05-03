@@ -18,7 +18,7 @@ router.post(
     const errors = validationResult(req)
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() })
 
-    const { listing_id, message, offer_amount } = req.body
+    const { listing_id, message, offer_amount, is_buy_now } = req.body
     const buyerId = req.user.user_id
 
     try {
@@ -84,7 +84,7 @@ router.post(
         sender_id: buyerId,
         sender_name: req.user.display_name,
         body: message,
-        type: offer_amount ? 'offer' : 'text',
+        type: is_buy_now ? 'buy_now' : (offer_amount ? 'offer' : 'text'),
         created_at: now,
       }
       if (offer_amount) msg.offer_amount = Number(offer_amount)

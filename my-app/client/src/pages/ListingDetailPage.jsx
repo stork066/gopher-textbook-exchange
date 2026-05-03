@@ -93,13 +93,22 @@ export default function ListingDetailPage() {
     if (!user) { navigate('/login'); return }
     setBuyingNow(true)
     try {
-      const res = await authFetch(`/api/listings/${id}/buy-now`, { method: 'POST' })
+      const price = Number(listing.price).toFixed(2)
+      const res = await authFetch('/api/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          listing_id: id,
+          message: `Buy Now request: I'd like to purchase this textbook at the listed price of $${price}.`,
+          offer_amount: Number(listing.price),
+          is_buy_now: true,
+        }),
+      })
       const data = await res.json()
       if (res.ok) {
-        showToast('Purchase successful!', 'success')
-        setListing((prev) => ({ ...prev, status: 'Sold' }))
+        showToast('Buy Now request sent! Check your messages.', 'success')
       } else {
-        showToast(data.error || 'Purchase failed', 'error')
+        showToast(data.error || 'Failed to send Buy Now request', 'error')
       }
     } catch {
       showToast('Network error', 'error')
