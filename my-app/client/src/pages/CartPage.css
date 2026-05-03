@@ -99,6 +99,36 @@
   letter-spacing: 0.04em;
 }
 
+.cart-status-pill {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cart-status-pending {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffc107;
+}
+
+.cart-status-pending:hover { filter: brightness(0.97); }
+
+.cart-status-purchased {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #28a745;
+}
+
+.cart-status-unavailable {
+  background: #e9ecef;
+  color: #555;
+  border: 1px solid #ced4da;
+}
+
 .cart-item-right {
   text-align: right;
   flex-shrink: 0;
@@ -139,6 +169,13 @@
   font-size: 1rem;
   color: #333;
   margin-bottom: 16px;
+}
+
+.cart-helper-text {
+  font-size: 0.82rem;
+  color: #666;
+  margin: 12px 0 0;
+  line-height: 1.4;
 }
 
 .cart-total-amount {

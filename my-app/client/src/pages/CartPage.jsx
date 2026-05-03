@@ -4,13 +4,30 @@ import { useToast } from '../context/ToastContext'
 import { useState } from 'react'
 import './CartPage.css'
 
-export default function CartPage() {
-  const { items, loading, removeFromCart, checkout, itemCount } = useCart()
-  const showToast = useToast()
-  const [checkingOut, setCheckingOut] = useState(false)
-  const [result, setResult] = useState(null)
+function StatusPill({ status }) {
+  if (status === 'pending') {
+    return (
+      <Link to="/messages" className="cart-status-pill cart-status-pending">
+        Pending — awaiting seller
+      </Link>
+    )
+  }
+  if (status === 'purchased') {
+    return <span className="cart-status-pill cart-status-purchased">Purchased</span>
+  }
+  if (status === 'unavailable') {
+    return <span className="cart-status-pill cart-status-unavailable">No longer available</span>
+  }
+  return null
+}
 
-  const total = items.reduce((sum, i) => sum + (i.listing?.price || 0), 0)
+export default function CartPage() {
+  const { items, loading, removeFromCart, sendBuyNowRequests, itemCount } = useCart()
+  const showToast = useToast()
+  const [sending, setSending] = useState(false)
+
+  const inCartItems = items.filter((i) => i.status === 'in_cart')
+  const inCartTotal = inCartItems.reduce((sum, i) => sum + (i.listing?.price || 0), 0)
 
   async function handleRemove(listingId) {
     try {
@@ -21,16 +38,29 @@ export default function CartPage() {
     }
   }
 
-  async function handleCheckout() {
-    setCheckingOut(true)
+  async function handleSendRequests() {
+    setSending(true)
     try {
-      const data = await checkout()
-      setResult(data)
-      showToast(`Purchased ${data.transactions.length} item(s)!`, 'success')
+      const data = await sendBuyNowRequests()
+      const sentCount = data.sent?.length || 0
+      const skippedCount = data.skipped?.length || 0
+      if (sentCount > 0 && skippedCount === 0) {
+        showToast(
+          `Sent ${sentCount} Buy Now request${sentCount === 1 ? '' : 's'} — check Messages.`,
+          'success'
+        )
+      } else if (sentCount > 0 && skippedCount > 0) {
+        showToast(
+          `Sent ${sentCount} of ${sentCount + skippedCount} — ${skippedCount} skipped (already pending or unavailable).`,
+          'success'
+        )
+      } else {
+        showToast('No requests sent — items already pending or unavailable.', 'error')
+      }
     } catch (err) {
       showToast(err.message, 'error')
     }
-    setCheckingOut(false)
+    setSending(false)
   }
 
   if (loading) {
@@ -39,25 +69,6 @@ export default function CartPage() {
         <div className="cart-container">
           <h1>Your Cart</h1>
           <p className="cart-loading">Loading cart...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (result) {
-    return (
-      <div className="cart-page">
-        <div className="cart-container">
-          <div className="checkout-success">
-            <h1>Purchase Complete</h1>
-            <p>{result.transactions.length} item(s) purchased successfully.</p>
-            {result.errors.length > 0 && (
-              <p className="checkout-errors">
-                {result.errors.length} item(s) were no longer available.
-              </p>
-            )}
-            <Link to="/account" className="cart-btn-primary">View Purchases</Link>
-          </div>
         </div>
       </div>
     )
@@ -95,6 +106,7 @@ export default function CartPage() {
                     <span className={`cart-badge badge-${item.listing?.condition === 'New' || item.listing?.condition === 'Like New' ? 'green' : item.listing?.condition === 'Good' ? 'yellow' : 'orange'}`}>
                       {item.listing?.condition}
                     </span>
+                    <StatusPill status={item.status} />
                   </div>
                   <div className="cart-item-right">
                     <span className="cart-item-price">
@@ -110,16 +122,24 @@ export default function CartPage() {
 
             <div className="cart-summary">
               <div className="cart-total">
-                <span>Total ({itemCount} {itemCount === 1 ? 'item' : 'items'})</span>
-                <span className="cart-total-amount">${total.toFixed(2)}</span>
+                <span>
+                  {inCartItems.length === itemCount
+                    ? `Total (${itemCount} ${itemCount === 1 ? 'item' : 'items'})`
+                    : `Ready to send (${inCartItems.length} of ${itemCount})`}
+                </span>
+                <span className="cart-total-amount">${inCartTotal.toFixed(2)}</span>
               </div>
               <button
                 className="cart-btn-primary checkout-btn"
-                onClick={handleCheckout}
-                disabled={checkingOut}
+                onClick={handleSendRequests}
+                disabled={sending || inCartItems.length === 0}
               >
-                {checkingOut ? 'Processing...' : 'Checkout'}
+                {sending ? 'Sending...' : 'Send Buy Now Requests'}
               </button>
+              <p className="cart-helper-text">
+                Each item sends a Buy Now request to its seller. Nothing is purchased
+                until the seller accepts.
+              </p>
             </div>
           </>
         )}

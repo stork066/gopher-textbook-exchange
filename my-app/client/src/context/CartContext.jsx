@@ -43,10 +43,13 @@ export function CartProvider({ children }) {
     return data
   }, [authFetch, fetchCart])
 
-  const checkout = useCallback(async () => {
+  // Sends a Buy Now request for each cart item. Returns { sent, skipped }.
+  // The cart is intentionally NOT emptied — items remain so the buyer can
+  // track status (pending / purchased / unavailable).
+  const sendBuyNowRequests = useCallback(async () => {
     const res = await authFetch('/api/cart/checkout', { method: 'POST' })
     const data = await res.json()
-    if (!res.ok) throw new Error(data.error || 'Checkout failed')
+    if (!res.ok) throw new Error(data.error || 'Failed to send Buy Now requests')
     await fetchCart()
     return data
   }, [authFetch, fetchCart])
@@ -54,7 +57,7 @@ export function CartProvider({ children }) {
   const itemCount = items.length
 
   return (
-    <CartContext.Provider value={{ items, loading, itemCount, addToCart, removeFromCart, checkout, fetchCart }}>
+    <CartContext.Provider value={{ items, loading, itemCount, addToCart, removeFromCart, sendBuyNowRequests, fetchCart }}>
       {children}
     </CartContext.Provider>
   )
